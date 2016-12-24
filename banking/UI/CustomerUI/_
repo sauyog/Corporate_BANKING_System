@@ -1,0 +1,26 @@
+#ifndef _CUSTOMERUI_h_
+#define _CUSTOMERUI_h_
+
+#include <iostream>
+using namespace std;
+
+class CustomerUI
+{
+   public:
+
+   static int getCustomerId(string&);
+   static int getCustomerName(string&);
+   static int getCustomerMobileNumber(string&);
+   static int getCustomerAddress(string&);
+   static int getCustomerDob(string&);
+   static int getCustomerPan(string&);
+   static int getGuranteerName(string&);
+   static int getGuranteerAccno(string&);
+   static int getCustomerPincode(string&);
+   static int getJointCustomerName(string&);
+  // int CustomerUI::getCustomerGuranteerName(string & p_guranteername)  
+};
+
+#endif
+
+

@@ -1,0 +1,657 @@
+#include "DB.h"
+#include "../GlobalDefs/GlobalDefs.h"
+#include<sstream>
+#include<string>
+#include<iostream>
+#include<cstring>
+#include "../AppClasses/Account/Account.h"
+#include "../AppClasses/Customer/Customer.h"
+#include "../AppClasses/Transaction/Transaction.h"
+
+
+using namespace std;
+//#include "../ExceptionClasses/SqlError/SqlError.h"
+exec sql include sqlca.h;
+
+// Defining Static Variables
+
+string DB::m_dbUserName = "";
+string DB::m_dbPassword = "";  
+bool DB::m_DbConnected = false;
+//int  h_accountno;
+EXEC SQL BEGIN DECLARE SECTION;
+
+   char h_UserName[20];
+   char h_Password[20];
+   char h_DynamicStmt[2048];
+
+EXEC SQL END DECLARE SECTION;
+
+void DB::initialize_DB_Connection(string p_UserName, string p_Password)
+{
+  m_dbUserName = p_UserName;
+  m_dbPassword = p_Password;
+}
+
+int DB::dbConnect()
+{
+//  try
+//  {
+    strcpy(h_UserName,m_dbUserName.c_str());
+    strcpy(h_Password,m_dbPassword.c_str());
+
+    EXEC SQL CONNECT :h_UserName IDENTIFIED BY :h_Password ;
+
+    if(sqlca.sqlcode < 0)
+	cout<<sqlca.sqlcode<<endl;
+  //    throw ( SqlError( sqlca.sqlcode, sqlca.sqlerrm.sqlerrmc, "DB Connect Error" ) );
+
+    m_DbConnected = true;
+
+    return SUCCESS;
+ /* } 
+  catch (SqlError sqlError) 
+  {
+    sqlError.displaySqlError();
+  }
+  return FAILED;*/
+}
+
+int DB::dbExecDML_Stmt(string p_strInsertStmt)
+{
+ // try
+ // {
+    strcpy(h_DynamicStmt, p_strInsertStmt.c_str());
+
+    EXEC SQL EXECUTE IMMEDIATE :h_DynamicStmt;
+
+    if(sqlca.sqlcode < 0)
+  //    throw ( SqlError( sqlca.sqlcode, sqlca.sqlerrm.sqlerrmc, "DB Execute DML Error" ) );
+{	cout<<"code"<<sqlca.sqlerrm.sqlerrmc<<endl;
+		return FAILED;
+}
+
+    EXEC SQL COMMIT;
+
+    return SUCCESS;
+ /* } 
+  catch (SqlError sqlError) 
+  {
+    sqlError.displaySqlError();
+  }*/
+ // return FAILED;
+} 
+void DB::dbCloseConnection()
+{
+  if(m_DbConnected)
+  {
+   EXEC SQL COMMIT WORK RELEASE;
+   m_DbConnected = false;
+  }
+}
+
+int DB::dbCheckLogin(Login p_loginObj,int &p_UserRole)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+    char h_UserName[20];
+    char h_Password[15];
+    int h_UserRole;
+  EXEC SQL END DECLARE SECTION;
+ // try
+  //{
+    strcpy(h_UserName, p_loginObj.getUserName().c_str());
+    strcpy(h_Password, p_loginObj.getPassword().c_str());
+    EXEC SQL SELECT desgn INTO :h_UserRole FROM h95_grp6_login WHERE uname=:h_UserName AND pwd=:h_Password;
+
+    if(sqlca.sqlcode < 0)
+	cout<<sqlca.sqlcode<<endl;
+//	cout<<"invalid user name password"<<endl;
+//	return FAILED;}
+    if(sqlca.sqlcode != 0){
+        cout<<sqlca.sqlcode<<endl;
+        cout<<"invalid user name password"<<endl;
+        return FAILED;}
+    //  throw ( SqlError( sqlca.sqlcode, sqlca.sqlerrm.sqlerrmc, "Invalid UserName or Password" ) );
+    
+    p_UserRole = h_UserRole;
+
+    return SUCCESS;
+ // }
+}
+
+int DB :: openAccountInDb(Account& acc_obj,char c,char d)
+	{
+		EXEC SQL BEGIN DECLARE SECTION;
+		int h_customerId;
+		char h_accountType[11];
+		int h_accountBal;
+  		char h_joinName[31];
+		unsigned long int h_accountNo;
+		int h_creditNo;
+		int h_debitNo;
+		EXEC SQL END DECLARE SECTION;
+		istringstream(acc_obj.getCustomerId()) >> h_customerId;
+		strcpy(h_accountType,acc_obj.getAccountType().c_str());
+		strcpy(h_joinName,acc_obj.getJoinName().c_str());
+		h_accountBal=acc_obj.getAccountBalance();
+           if(c=='n' && d=='n')
+	{
+	 cout<<"no credit debit"<<endl;	
+    	 EXEC SQL INSERT INTO h95_group6_account values(:h_customerId,h95_group6_account_accountno.nextval,:h_accountType,:h_accountBal,null,null,null,null,null,null,null,null,sysdate,'active');
+	 if(sqlca.sqlcode < 0)
+	{
+        cout<<sqlca.sqlcode<<sqlca.sqlerrm.sqlerrmc<<endl;
+      cout<<"cannot add data"<<endl;
+      return FAILED;
+	}
+	}
+
+           if(c=='n' && d=='y')
+        {
+         cout<<"only debit"<<endl;
+         EXEC SQL INSERT INTO h95_group6_account values(:h_customerId,h95_group6_account_accountno.nextval,:h_accountType,:h_accountBal,null,null,null,null,null,h95_group6_debitsequence.nextval,null,null,sysdate,'active');
+         if(sqlca.sqlcode < 0)
+        {
+        cout<<sqlca.sqlcode<<sqlca.sqlerrm.sqlerrmc<<endl;
+      cout<<"cannot add data"<<endl;
+      return FAILED;
+        }
+        }
+
+           if(c=='y' && d=='n')
+        {
+         cout<<"only credit"<<endl;
+         EXEC SQL INSERT INTO h95_group6_account values(:h_customerId,h95_group6_account_accountno.nextval,:h_accountType,:h_accountBal,null,null,null,null,null,null,h95_group6_creditsequence.nextval,null,sysdate,'active');
+         if(sqlca.sqlcode < 0)
+        {
+        cout<<sqlca.sqlcode<<sqlca.sqlerrm.sqlerrmc<<endl;
+      cout<<"cannot add data"<<endl;
+      return FAILED;
+        }
+        }
+
+           if(c=='y' && d=='y')
+        {
+         cout<<"both credit debit"<<endl;
+         EXEC SQL INSERT INTO h95_group6_account values(:h_customerId,h95_group6_account_accountno.nextval,:h_accountType,:h_accountBal,null,null,null,null,null,h95_group6_debitsequence.nextval,h95_group6_creditsequence.nextval,null,sysdate,'active');
+         if(sqlca.sqlcode < 0)
+        {
+        cout<<sqlca.sqlcode<<sqlca.sqlerrm.sqlerrmc<<endl;
+      cout<<"cannot add data"<<endl;
+      return FAILED;
+        }
+        }
+
+
+
+	EXEC SQL SELECT accountno,nvl(debitcardno,0),nvl(creditcardno,0) INTO :h_accountNo,:h_creditNo,:h_debitNo from h95_group6_account where customerid=:h_customerId;
+                 if(sqlca.sqlcode < 0)
+        {
+        cout<<"error"<<sqlca.sqlcode<<sqlca.sqlerrm.sqlerrmc<<endl;
+      cout<<"cannot retrieve account no!"<<endl;
+      return FAILED;
+        }
+        stringstream ss;
+	ss << h_accountNo;
+	string str1 = ss.str();
+        acc_obj.setAccountNo(str1);	
+	
+        
+        ss << h_creditNo;
+        str = ss.str();
+        acc_obj.setCreditNo(str);
+
+        ss << h_accountNo;
+        str = ss.str();
+        acc_obj.setDebitNo(str);
+
+	//copy in nikdb!!
+
+	Transaction trans_obj(str1,h_accountBal,"deposit",h_accountBal);
+	if(DB::updateTransactionTable(trans_obj)==FAILED)
+	{
+	cout<<"cannot update transaction table"<<endl;
+	return FAILED;
+	}
+	EXEC SQL COMMIT;
+	return SUCCESS;
+	
+
+}
+
+int DB::withdraw(Transaction &trans_obj)
+{
+EXEC SQL BEGIN DECLARE SECTION;
+int h_transId;
+char h_tranType[16];
+int h_transAmount;
+int h_accountNo;
+int h_balance;
+EXEC SQL END DECLARE SECTION;
+trans_obj.setTransactionType("withdraw");
+h_transAmount=trans_obj.getAmount();
+if(DB::checkStatus(trans_obj.getAccountNo())== FAILED)
+	{
+	cout<<"ACCOUNT INACTIVE/Invalid Account No"<<endl;
+	return FAILED;
+	}
+
+if(DB::checkBalance(trans_obj.getAccountNo(),h_balance) == FAILED)
+	{
+	cout<<"cannot retrieve balance"<<endl;
+	return FAILED;
+	}
+if(h_balance<h_transAmount)
+	{
+	cout<<"not sufficient balance to withdraw!"<<endl;
+	return FAILED;
+	}
+h_balance=h_balance-h_transAmount;
+if(DB::updateBalance(trans_obj.getAccountNo(),h_balance) == FAILED)
+	{
+	cout<<"cannot update balance!/transaction failled"<<endl;
+	return FAILED;
+	}
+istringstream(trans_obj.getAccountNo()) >> h_accountNo;
+
+if(DB::updateTransactionTable(trans_obj)==FAILED)
+	{
+	cout<<"update transaction failed!"<<endl;
+	return FAILED;
+	}
+        EXEC SQL COMMIT;
+	
+return SUCCESS;
+}
+
+int DB::deposit(Transaction &trans_obj)
+{
+EXEC SQL BEGIN DECLARE SECTION;
+int h_transId;
+char h_tranType[16];
+int h_transAmount;
+int h_accountNo;
+int h_balance;
+EXEC SQL END DECLARE SECTION;
+trans_obj.setTransactionType("deposit");
+h_transAmount=trans_obj.getAmount();
+if(DB::checkStatus(trans_obj.getAccountNo())== FAILED)
+        {
+        cout<<"ACCOUNT INACTIVE"<<endl;
+        return FAILED;
+        }
+
+if(DB::checkBalance(trans_obj.getAccountNo(),h_balance) == FAILED)
+        {
+        cout<<"cannot retrieve balance"<<endl;
+        return FAILED;
+        }
+/*
+if(h_balance<h_transAmount)
+        {
+        cout<<"not sufficient balance to withdraw!"<<endl;
+        return FAILED;
+        }
+*/
+h_balance=h_balance+h_transAmount;
+if(DB::updateBalance(trans_obj.getAccountNo(),h_balance) == FAILED)
+        {
+        cout<<"cannot update balance!/transaction failled"<<endl;
+        return FAILED;
+        }
+istringstream(trans_obj.getAccountNo()) >> h_accountNo;
+
+if(DB::updateTransactionTable(trans_obj)==FAILED)
+        {
+        cout<<"update transaction failed!"<<endl;
+        return FAILED;
+        }
+EXEC SQL COMMIT;
+
+return SUCCESS;
+}
+                                                                                  
+
+
+
+
+int DB::updateTransactionTable(Transaction trans_obj)
+{
+EXEC SQL BEGIN DECLARE SECTION;
+int h_transId;
+int h_accountNo;
+char h_transType[21];
+int h_transAmount;
+EXEC SQL END DECLARE SECTION;
+istringstream(trans_obj.getAccountNo()) >> h_accountNo;
+h_transAmount=trans_obj.getAmount();
+strcpy(h_transType,trans_obj.getTransactionType().c_str());
+
+EXEC SQL INSERT INTO h95_group6_transaction values(h95_group6_transactionsequence.nextval,:h_accountNo,:h_transType,:h_transAmount,sysdate);
+if(sqlca.sqlcode != 0)
+	{
+	cout<<sqlca.sqlcode<<endl;
+	cout<<"cannot update transaction table/transaction failed!"<<endl;
+	return FAILED;
+	}
+trans_obj//EXEC SQL SELECT transactionId into :h_transId FROM h96_group6_transaction where
+return SUCCESS;
+}
+
+
+int DB::checkStatus(string accountNo)
+{
+EXEC SQL BEGIN DECLARE SECTION;
+int h_accountNo;
+char h_status[9];
+EXEC SQL END DECLARE SECTION;
+ istringstream(accountNo) >> h_accountNo;
+EXEC SQL SELECT accountstatus INTO :h_status FROM h95_group6_account WHERE accountno=:h_accountNo;
+ if(sqlca.sqlcode != 0)
+        {
+        cout<<"error"<<sqlca.sqlcode<<sqlca.sqlerrm.sqlerrmc<<endl;
+      cout<<"cannot retrieve status/invalid account id"<<endl;
+      return FAILED;
+        }
+cout<<"status="<<h_status<<"axso"<<endl;
+string ss(h_status);
+cout<<"string(ss)="<<ss<<endl;
+int a=1;
+ if (strcmp(h_status,"inactive") == 0)
+	{
+	cout<<"account inactive"<<endl; 
+	return FAILED;
+	}
+ cout<<"account active"<<endl;
+ return SUCCESS;
+}
+
+
+int DB::updateBalance(string accountNo,int h_balance)
+{
+EXEC SQL BEGIN DECLARE SECTION;
+int h_accountNo;
+EXEC SQL END DECLARE SECTION;
+ istringstream(accountNo) >> h_accountNo;
+cout<<"int accountno="<<h_accountNo;
+EXEC SQL UPDATE h95_group6_account SET accountbal=:h_balance where accountno=:h_accountNo;
+ if(sqlca.sqlcode != 0)
+        {
+        cout<<"error"<<sqlca.sqlcode<<sqlca.sqlerrm.sqlerrmc<<endl;
+      cout<<"cannot update account balance/invalid account id"<<endl;
+      return FAILED;
+        }
+return SUCCESS;
+}
+
+
+
+int DB::checkBalance(string accountNo,int& h_balance)
+{
+EXEC SQL BEGIN DECLARE SECTION;
+int h_accountNo;
+EXEC SQL END DECLARE SECTION;
+ istringstream(accountNo) >> h_accountNo;
+EXEC SQL SELECT accountbal into :h_balance from h95_group6_account WHERE accountno=:h_accountNo;
+ if(sqlca.sqlcode != 0)
+        {
+        cout<<"error"<<sqlca.sqlcode<<sqlca.sqlerrm.sqlerrmc<<endl;
+      cout<<"cannot retrieve account balance/invalid account no"<<endl;
+      return FAILED;
+        }
+return SUCCESS;
+}
+
+int DB :: fetchAllTransactionDetails(vector<Transaction> &trans_list , string Accountno)
+{
+//stringstream(Accountno) >> h_accountno;
+exec sql begin declare section;
+int h_transactionid;
+char h_transactiontype[21];
+int h_transactionamount;
+char h_transactiondate[10];
+int h_accountno;
+
+EXEC SQL END DECLARE SECTION;
+stringstream(Accountno) >> h_accountno;
+EXEC SQL DECLARE trans_cursor CURSOR FOR SELECT transactionid,rtrim(transactiontype),transactionamount,transactiondate,rtrim(accountno) from h95_group6_transaction   WHERE accountno=:h_accountno;
+
+EXEC SQL OPEN trans_cursor;
+
+for(;;)
+{
+	EXEC SQL FETCH trans_cursor INTO :h_transactionid,:h_transactiontype,:h_transactionamount,:h_transactiondate,:h_accountno;
+	if(sqlca.sqlcode != 0)
+	{
+		cout<<"code="<<sqlca.sqlcode<<sqlca.sqlerrm.sqlerrmc<<endl;
+		break;
+	}
+	Transaction Trans_obj;
+	stringstream ss;
+        ss << h_accountno;
+        string str = ss.str();
+        Trans_obj.setAccountNo(str);
+
+ 	Trans_obj.setTransactionType((string)h_transactiontype);
+ 	Trans_obj.setTransactionId(h_transactionid);
+	Trans_obj.setTransactionDate((string)h_transactiondate);
+ 	Trans_obj.setTransactionAmount(h_transactionamount);
+	//  Trans_obj.setAccountNo(h_accountno);
+ 
+	trans_list.push_back(Trans_obj);
+}
+EXEC SQL CLOSE trans_cursor;
+
+return SUCCESS;
+}
+
+
+
+
+
+
+
+int DB :: fetchAllCustomer(vector<Customer> &customer_list,vector<Account> &acc_list)
+{
+exec sql begin declare section;
+char h_customerid[16];
+char h_accCustomerid[16];
+char h_customername[31];
+char h_accountno[7];
+char h_accounttype[11];
+int h_accountbal;
+exec sql end declare section;
+
+EXEC SQL DECLARE cust_cursor CURSOR FOR SELECT rtrim(a.customerid),a.customername,rtrim(b.customerid),b.accountno,nvl(b.accountbal,0),b.accounttype from h95_group6_customer a,h95_group6_account b WHERE a.customerid=b.customerid and accountstatus != 'inactive';
+if(sqlca.sqlcode < 0)
+{
+cout<<"code="<<sqlca.sqlcode<<sqlca.sqlerrm.sqlerrmc<<endl;
+return FAILED;
+}
+EXEC SQL OPEN cust_cursor;
+for(;;)
+{
+EXEC SQL FETCH cust_cursor INTO :h_customerid,:h_customername,:h_accCustomerid,:h_accountno,:h_accountbal,:h_accounttype;
+if(sqlca.sqlcode != 0)
+{
+cout<<"code="<<sqlca.sqlcode<<sqlca.sqlerrm.sqlerrmc<<endl;
+break;
+}
+Customer cust_obj;
+cust_obj.setCustomerName((string)h_customername);
+cust_obj.setCustomerId((string)h_customerid);
+customer_list.push_back(cust_obj);
+Account acc_obj;
+acc_obj.setAccountNo((string)h_accountno);
+acc_obj.setCustomerId((string)h_accCustomerid);
+acc_obj.setAccountBalance(h_accountbal);
+acc_obj.setAccountType((string)h_accounttype);
+acc_list.push_back(acc_obj);
+}
+EXEC SQL CLOSE cust_cursor;
+return SUCCESS;
+}
+
+int DB::deleteAccountInDb(string p_AccountNo)
+{       EXEC SQL BEGIN DECLARE SECTION;
+        char h_accountNo[21];
+        EXEC SQL END DECLARE SECTION;
+        strcpy(h_accountNo,p_AccountNo.c_str());
+        exec sql update h95_group6_account set accountstatus= 'inactive' where accountno=:h_accountNo;
+        if(sqlca.sqlcode<0)
+        {
+                cout<<sqlca.sqlcode<<endl;
+                return FAILED;
+
+
+        }
+   EXEC SQL COMMIT;
+
+        return SUCCESS;
+}
+
+ 
+/*
+  catch(SqlError sqlError)
+  {
+    sqlError.displaySqlError();
+  }
+  return FAILED;
+}
+*/
+
+int DB::fetchAllTransactionForInterest(string Accountno,vector<string>& transDate_list,vector<float>& balobj)
+{
+	EXEC SQL BEGIN DECLARE SECTION;
+	char h_accountno[15];
+	int h_accountbal;
+	char h_transactiondate[10];
+	float h_interest;
+	char h_lastday[15];
+	float h_balance;
+	int h_fees;
+	char h_firstday[15];
+ 	 EXEC SQL END DECLARE SECTION;
+	strcpy(h_accountno,Accountno.c_str());
+        
+         //istringstream(Accountno) >> h_accountno;	
+	EXEC SQL SELECT last_day(add_months(sysdate,-1)),trunc(add_months(sysdate,-1),'month') INTO :h_lastday,:h_firstday from dual;
+	EXEC SQL DECLARE interest_cursor CURSOR FOR SELECT transactiondate,currentbalance from h95_group6_transaction  where accountno=:h_accountno and transactiondate between :h_firstday and :h_lastday  order by transactiondate;
+ if(sqlca.sqlcode != 0)
+        {
+                cout<<"code="<<sqlca.sqlcode<<sqlca.sqlerrm.sqlerrmc<<endl;
+                return FAILED;
+
+
+        }
+
+
+EXEC SQL OPEN interest_cursor;
+for(;;)
+{
+        EXEC SQL FETCH interest_cursor INTO :h_transactiondate,:h_accountbal;
+        if(sqlca.sqlcode != 0)
+        {
+                cout<<"code="<<sqlca.sqlcode<<sqlca.sqlerrm.sqlerrmc<<endl;
+                break;
+        }
+transDate_list.push_back((string)h_transactiondate);
+balobj.push_back(h_accountbal);
+}
+EXEC SQL CLOSE interest_cursor;
+return SUCCESS;
+}
+
+
+int DB::getAccountInterest(string p_type,float& p_interest,float& p_fees,float& p_amb)
+{
+EXEC SQL BEGIN DECLARE SECTION;
+char h_type[15];
+float h_interest;
+float h_fees;
+float h_amb;
+EXEC SQL END DECLARE SECTION;
+strcpy(h_type,p_type.c_str());
+EXEC SQL SELECT interest,fees,amb INTO :h_interest,:h_fees,:h_amb FROM h95_group6_accountinterest where type=:h_type;
+ if(sqlca.sqlcode != 0)
+        {
+                cout<<"code="<<sqlca.sqlcode<<sqlca.sqlerrm.sqlerrmc<<endl;
+		cout<<"cannot fetch interest from interest table!"<<endl;
+        }
+
+p_interest=h_interest;
+p_fees=h_fees;
+p_amb=h_amb;
+}
+
+
+int DB::fetchAllAccount(vector<string> &acc_list,string p_type)
+{
+EXEC SQL BEGIN DECLARE SECTION;
+char h_type[15];
+int h_accountno;
+EXEC SQL END DECLARE SECTION;
+ stringstream ss;
+ string str1;
+strcpy(h_type,p_type.c_str());
+EXEC SQL DECLARE acc_cursor CURSOR FOR SELECT accountno from h95_group6_account where accounttype=:h_type;
+ if(sqlca.sqlcode != 0)
+        {
+                cout<<"code="<<sqlca.sqlcode<<sqlca.sqlerrm.sqlerrmc<<endl;
+                return FAILED;
+        }
+EXEC SQL OPEN acc_cursor;
+for(;;)
+{
+ EXEC SQL FETCH acc_cursor INTO :h_accountno;
+        if(sqlca.sqlcode != 0)
+        {
+                cout<<"code="<<sqlca.sqlcode<<sqlca.sqlerrm.sqlerrmc<<endl;
+                break;
+        }
+
+ss << h_accountno;
+str1 = ss.str();
+acc_list.push_back(str1);
+}
+EXEC SQL CLOSE acc_cursor;
+return SUCCESS;
+}
+int DB :: viewAllLockerInDb(vector<string> &cust_list, vector<string> &locker_id)
+{
+	  EXEC SQL BEGIN DECLARE SECTION;
+        int h_lockerid;
+    	char h_customername[50];
+         EXEC SQL END DECLARE SECTION;
+	 stringstream ss;
+         string str1;
+	exec sql create view h95_group6_display_locker as select A.customername,B.lockerid from h95_group6_customer A,h95_group6_locker B,h95_group6_fixeddeposit C ,h95_group6_account D where B.fdid=C.fdid and C.accountno=D.accountno and D.customerid = A.customerid and b.status != 'inactive' ;
+        if(sqlca.sqlcode != 0)
+        {
+                cout<<"code="<<sqlca.sqlcode<<sqlca.sqlerrm.sqlerrmc<<endl;
+                return FAILED;
+        }
+
+	EXEC SQL DECLARE locker_cursor CURSOR FOR SELECT lockerid,customername from h95_group6_display_locker;
+	EXEC SQL OPEN locker_cursor;
+	for(;;)
+	{
+		 EXEC SQL FETCH locker_cursor INTO :h_lockerid ,:h_customername;
+		 if(sqlca.sqlcode != 0)
+        {
+                cout<<"code="<<sqlca.sqlcode<<sqlca.sqlerrm.sqlerrmc<<endl;
+                break;
+        }
+	ss << h_lockerid;
+	str1 = ss.str();
+	locker_id.push_back(str1);
+	cust_list.push_back(h_customername);
+	}
+	EXEC SQL CLOSE locker_cursor;
+       EXEC SQL drop view h95_group6_display_locker;
+	return SUCCESS;
+}
+
+           
+      
+		

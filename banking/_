@@ -1,0 +1,10 @@
+c=` expr $1 + $2 `
+echo "$c"
+c=` expr $1 - $2 `
+echo "$c"
+c=` expr $1 \* $2 `
+echo "$c"
+c=` expr $1 / $2 `
+echo "$c"
+
+

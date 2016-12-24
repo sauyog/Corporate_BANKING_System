@@ -1,0 +1,268 @@
+#include "AccountUI.h"
+#include <iomanip>
+#include <sstream>
+#include "../../GlobalDefs/GlobalDefs.h"
+#include <unistd.h>
+int AccountUI::getAccountNo(string& p_AccountNo)
+        {
+                //string l_AccountNo;
+        	cout<<setw(40)<<""<<BOLDBLACK<<left<<setw(20)<<"Enter Your Account Number"<<RESET<<endl<<endl;
+        //        cout<<"Enter Your Account Number"<<endl;
+                cout<<BOLDMAGENTA;
+ 	 	cin>>p_AccountNo;
+                return SUCCESS;
+        }
+
+int AccountUI::getTransferAccountNo(string& l_AccountNo1,string& l_AccountNo2)
+	{
+//	cout<<"Enter Your Account Number from which you want to transfer money:"<<endl;
+	cout<<setw(40)<<""<<BOLDBLACK<<left<<setw(20)<<"Enter Your Account Number from which you want to transfer money:"<<RESET<<endl<<endl;
+	cout<<BOLDMAGENTA;
+	cin>>l_AccountNo1;
+//	cout<<"Enter Your Account Number to which you want to transfer money:"<<endl;
+	cout<<setw(40)<<""<<BOLDBLACK<<left<<setw(20)<<"Enter Your Account Number to which you want to transfer money:"<<RESET<<endl<<endl;
+	cout<<BOLDMAGENTA;
+	cin>>l_AccountNo2;
+	return SUCCESS;
+	}
+
+int AccountUI::getCustomerId(string& p_CustomerId)
+{
+   string l_CustomerId;
+//   cout<<"\n\nEnter Customer ID:"<<endl;
+	 cout<<setw(40)<<""<<BOLDBLACK<<left<<setw(20)<<"\n\nEnter Customer ID:"<<RESET<<endl<<endl; 
+	 cout<<BOLDMAGENTA;
+	 cin>>l_CustomerId;
+  /* if ( !(istringstream(l_CustomerId) >> p_CustomerId) )
+   {
+    cout<<"\n\nInvalid Customer ID, Only digits are Accepted"<<endl;
+    return FAILED;
+   }*/
+  p_CustomerId=l_CustomerId;
+   return SUCCESS;
+}
+ 
+int AccountUI::getAccountType(string& p_AccountType)
+{
+   string l_AccountType;
+//   cout<<"\n\nEnter type of account:";
+  cout<<setw(40)<<""<<BOLDBLACK<<left<<setw(20)<<"\n\nEnter type of account:"<<RESET<<endl<<endl;
+   //getline(cin,l_AccountType);
+   cout<<BOLDMAGENTA;
+    cin>>l_AccountType;
+   if(l_AccountType == "")
+   {
+  //   cout<<"\n\nAccount type Name cannot be empty";
+   cout<<setw(40)<<""<<BOLDBLACK<<left<<setw(20)<<"\n\nAccount type name cannot be empty"<<RESET<<endl<<endl; 
+    return FAILED;
+   }
+
+   p_AccountType = l_AccountType;
+
+   return SUCCESS;
+}
+
+int AccountUI::getJoinName(string& p_joinName)
+{
+
+   char j;
+   cout<<setw(40)<<""<<BOLDBLACK<<left<<setw(20)<<"\n\nif u want to open joint account then press y or else n:"<<RESET<<endl<<endl;
+  // cout<<"if u want to open joint account then press y or else n"<<endl;
+  cout<<BOLDMAGENTA;
+   cin>>j;
+   if(j=='y')
+   {
+   cout<<setw(40)<<""<<BOLDBLACK<<left<<setw(20)<<"\n\nEnter join account holder name:"<<RESET<<endl<<endl;
+// cout<<"Enter join account holder name"<<endl;
+    cout<<BOLDMAGENTA;
+    cin>>p_joinName;
+     return SUCCESS;
+   }
+   return FAILED;
+} 
+
+
+
+int AccountUI::getAccountBalance(int& p_AccountBalance)
+{
+   int l_AccountBalance;
+ //  cout<<"\n\nEnter initial amount:"<<endl;
+   cout<<setw(40)<<""<<BOLDBLACK<<left<<setw(20)<<"\n\nEnter initial amount:"<<RESET<<endl<<endl;
+  cout<<BOLDMAGENTA;
+    cin>>l_AccountBalance;
+  /* if ( !(istringstream(l_AccountBalance) >> p_AccountBalance) )
+   {
+    cout<<"\n\nInvalid Amount, Only digits are Accepted"<<endl;
+    return FAILED;
+   }*/
+   p_AccountBalance=l_AccountBalance;
+   return SUCCESS;
+}
+
+int AccountUI :: displayNewAccountDetails(Account acc_obj)
+{
+    cout<<setw(40)<<""<<BOLDBLACK<<left<<setw(20)<<"account number for new created account type is:"<<acc_obj.getAccountNo()<<RESET<<endl<<endl;
+//    cout<<"account number for new created account type is:"<<acc_obj.getAccountNo()<<endl<<endl;
+  
+    return SUCCESS;
+}
+
+int AccountUI::getCredit(char& credit)
+{
+  
+ //  cout<<"if u want credit card then press y or else n"<<endl;
+ cout<<setw(40)<<""<<BOLDBLACK<<left<<setw(20)<<"\n\nif u want credit card then press y or else n"<<RESET<<endl<<endl;  
+   cout<<BOLDMAGENTA;
+   cin>>credit;
+   return SUCCESS;
+}
+
+int AccountUI::getDebit(char& debit)
+{
+   cout<<setw(40)<<""<<BOLDBLACK<<left<<setw(20)<<"if u want to debit card then press y or else n"<<RESET<<endl<<endl; 
+   // cout<<"if u want to debit card then press y or else n"<<endl;
+   cout<<BOLDMAGENTA;
+   cin>>debit;
+   
+   return SUCCESS;
+}
+
+int AccountUI::getAmount(int& p_Amount)
+{
+  cout<<setw(40)<<""<<BOLDBLACK<<left<<setw(20)<<"\n\nEnter amount:"<<RESET<<endl<<endl;
+//   cout<<"\n\nEnter amount:"<<endl;
+   cout<<BOLDMAGENTA;
+   cin>>p_Amount;
+  /* if ( !(istringstream(l_CustomerId) >> p_CustomerId) )
+   {
+    cout<<"\n\nInvalid Customer ID, Only digits are Accepted"<<endl;
+    return FAILED;
+   }*/
+  
+   return SUCCESS;
+}
+
+int AccountUI::askForAccount()
+{
+   char a;
+  cout<<setw(40)<<""<<BOLDBLACK<<left<<setw(20)<<"do u have account, press y/n:..."<<RESET<<endl<<endl;
+//  cout<<"do u have account, press y/n:..."<<endl;
+   cout<<BOLDMAGENTA;
+   cin>>a;
+  if(a=='y')
+ {
+  return SUCCESS;
+ }
+return FAILED;
+}
+
+int AccountUI::askForLocker()
+{
+   char a;
+  cout<<setw(40)<<""<<BOLDBLACK<<left<<setw(20)<<"do u want locker, press y/n:..."<<RESET<<endl<<endl;
+//  cout<<"do u want locker, press y/n:..."<<endl;
+   cout<<BOLDMAGENTA;
+   cin>>a;
+  if(a=='y')
+ {
+  return SUCCESS;
+ }
+return FAILED;
+}
+
+
+
+
+int AccountUI::getFdAmount(int& f_amount)
+{
+  cout<<setw(40)<<""<<BOLDBLACK<<left<<setw(20)<<"\nEnter amount for fixed deposit"<<RESET<<endl<<endl;
+//  cout<<"\nEnter amount for fixed deposit"<<endl;
+  cout<<BOLDMAGENTA;
+  cin>>f_amount;
+   return SUCCESS;
+}
+
+int AccountUI::getFdDuration(int& f_duration)
+{
+ cout<<setw(40)<<""<<BOLDBLACK<<left<<setw(20)<<"\nenter fd duration in months"<<RESET<<endl<<endl;
+  //cout<<"enter fd duration in months"<<endl;
+   cout<<BOLDMAGENTA;
+   cin>>f_duration;
+   return SUCCESS;
+}
+int AccountUI::getFdId(string& fdId)
+{
+   cout<<setw(40)<<""<<BOLDBLACK<<left<<setw(20)<<"\nEnter your FD ID"<<RESET<<endl<<endl;
+ // cout<<"\nEnter your FD ID"<<endl;
+  cout<<BOLDMAGENTA;
+  cin>>fdId;
+   return SUCCESS;
+}
+
+
+int AccountUI :: displayNewFdDetails(Account acc_obj)
+{
+   cout<<setw(40)<<""<<BOLDBLACK<<left<<setw(20)<<"\n FD id is:"<<acc_obj.getFdId()<<RESET<<endl<<endl;
+   cout<<setw(40)<<""<<BOLDBLACK<<left<<setw(20)<<"\nFD maturity date is:"<<acc_obj.getFdEndDate()<<RESET<<endl<<endl;
+   cout<<setw(40)<<""<<BOLDBLACK<<left<<setw(20)<<"\nFD amount is:"<<acc_obj.getFdAmount()<<RESET<<endl<<endl;
+  // cout<<" FD id is:"<<acc_obj.getFdId()<<endl;
+  // cout<<"FD maturity date is:"<<acc_obj.getFdEndDate()<<endl;
+  // cout<<"FD amount is:"<<acc_obj.getFdAmount()<<endl;
+   return SUCCESS;
+}
+
+int AccountUI::getFdWithdrawChoice(Account acc_obj)
+ {
+  char a;
+   cout<<setw(40)<<""<<BOLDBLACK<<left<<setw(20)<<"\nyour fd maturity date is::"<<acc_obj.getFdEndDate()<<RESET<<endl<<endl;
+   cout<<setw(40)<<""<<BOLDBLACK<<left<<setw(20)<<"\ndo you still want to continue......press y/n:"<<RESET<<endl<<endl;
+//  cout<<"your fd maturity date is:"<<acc_obj.getFdEndDate()<<endl;
+  //cout<<"do you still want to continue......press y/n:"<<endl;
+  cout<<BOLDMAGENTA;
+  cin>>a;
+  if(a=='y')
+  {
+   return SUCCESS;
+  }
+   return FAILED;
+}
+/*
+int AccountUI::displayWithdrawOptions(string& choice)
+
+{ 		
+		 int flag=0;
+		 cout<<"enter the source of transaction::"<<endl<<"bank"<<endl<<"cheque"<<endl<<"creditcard"<<endl<<"debitcard"<<endl;
+			 cin>>choice;
+		do
+		{
+			if(choice == "bank"||"cheque"||"creditcard"||"debitcard")
+			{	flag=1;
+			return SUCCESS;
+			}
+			else
+			{
+				cout<<"invalid input"<<endl;
+				cout<<"Enter again please"<<endl;
+				cin>>choice;
+			}
+		}while(flag==0);
+			
+			
+
+
+		
+
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,192 @@
+#include "DB.h"
+#include "../GlobalDefs/GlobalDefs.h"
+#include<sstream>
+//#include "../AppClasses/Account/Account.h"
+//#include "../ExceptionClasses/SqlError/SqlError.h"
+
+#include<iostream>
+using namespace std;
+
+
+exec sql include sqlca.h;
+// Defining Static Variables
+string DB::m_dbUserName = "";
+string DB::m_dbPassword = "";  
+bool DB::m_DbConnected = false;
+
+EXEC SQL BEGIN DECLARE SECTION;
+ char h_UserName[20];
+ char h_Password[15];
+ char h_DynamicStmt[2048];
+ char h_DynamicStmt1[2048];
+EXEC SQL END DECLARE SECTION;
+
+void DB::initialize_DB_Connection(string p_UserName, string p_Password)
+{
+ m_dbUserName = p_UserName;
+  m_dbPassword = p_Password;
+}
+
+int DB::dbConnect()
+
+{
+//  try
+//  {
+   
+ strcpy(h_UserName,m_dbUserName.c_str());
+    
+strcpy(h_Password,m_dbPassword.c_str());
+
+    EXEC SQL CONNECT :h_UserName IDENTIFIED BY :h_Password ;
+  if(sqlca.sqlcode < 0)
+	cout<<sqlca.sqlcode<<endl;
+  
+//    throw ( SqlError( sqlca.sqlcode, sqlca.sqlerrm.sqlerrmc, "DB Connect Error" ) );
+
+   
+m_DbConnected = true;
+
+  return SUCCESS;
+ /* } 
+catch (SqlError sqlError) 
+ {
+    sqlError.displaySqlError();
+  }
+return FAILED;
+*/
+
+}
+
+int DB::dbExecDML_Stmt(string p_strInsertStmt)
+
+{
+// try
+ //{
+   strcpy(h_DynamicStmt, p_strInsertStmt.c_str());
+EXEC SQL EXECUTE IMMEDIATE :h_DynamicStmt;
+   if(sqlca.sqlcode < 0)
+      
+//throw ( SqlError( sqlca.sqlcode, sqlca.sqlerrm.sqlerrmc, "DB Execute DML Error" ) );
+{ cout<<"code"<<sqlca.sqlerrm.sqlerrmc<<endl;
+                return FAILED;
+}
+EXEC SQL COMMIT;    
+return SUCCESS;
+/*
+} 
+  catch (SqlError sqlError) 
+ 
+ {
+    
+sqlError.displaySqlError();
+ 
+ }
+ 
+// return FAILED;
+
+} 
+*/
+
+
+void DB::dbCloseConnection()
+{
+ if(m_DbConnected)
+  
+{
+  EXEC SQL COMMIT WORK RELEASE;
+  m_DbConnected = false;
+ }
+}
+
+int DB::dbCheckLogin(Login p_loginObj,int &p_UserRole)
+{
+ 
+ EXEC SQL BEGIN DECLARE SECTION;
+    char h_UserName[20];
+   char h_Password[15];
+ int h_UserRole;
+  
+EXEC SQL END DECLARE SECTION;
+
+ // try
+ 
+ //{
+    
+strcpy(h_UserName, p_loginObj.getUserName().c_str());
+ 
+   strcpy(h_Password, p_loginObj.getPassword().c_str());
+   
+
+ EXEC SQL SELECT desgn INTO :h_UserRole FROM login WHERE uname=:h_UserName AND pwd=:h_Password;
+
+   
+ if(sqlca.sqlcode < 
+cout<<sqlca.sqlcode<<endl;
+
+//	cout<<"invalid user name password"<<endl;
+
+//	return FAILED;}
+    
+if(sqlca.sqlcode != 0)
+{
+       
+ cout<<sqlca.sqlcode<<endl;
+ cout<<"invalid user name password"<<endl;
+        
+return FAILED;}
+    
+//  throw ( SqlError( sqlca.sqlcode, sqlca.sqlerrm.sqlerrmc, "Invalid UserName or Password" ) );
+
+    
+    p_UserRole = h_UserRole;
+
+    return SUCCESS;
+ 
+// }
+}
+
+/*
+  catch(SqlError sqlError)
+  
+{
+  
+  sqlError.displaySqlErr
+or();
+  
+}
+ 
+ return FAILED;
+
+}
+
+*/
+
+
+int DB::dbExecDML_Stmt1(string p_strDeleteStmt)
+
+{
+ 
+// try
+ 
+ //{
+   
+ strcpy(h_DynamicStmt1, p_strDeleteStmt.c_str());
+
+   
+
+ EXEC SQL EXECUTE IMMEDIATE :h_DynamicStmt1;
+
+ 
+   if(sqlca.sqlcode < 0)
+      
+    cout<<"customer NOT deleted"<<endl;
+//throw ( SqlError( sqlca.sqlcode, sqlca.sqlerrm.sqlerrmc, "DB Execute DML Error" ) );
+
+    
+   EXEC SQL COMMIT;
+
+    
+  return SUCCESS;
+  
+} 
+ 

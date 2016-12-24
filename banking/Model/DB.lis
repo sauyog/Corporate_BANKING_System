@@ -1,0 +1,12 @@
+
+Pro*C/C++: Release 11.2.0.1.0 - Production on Fri May 9 09:37:45 2014
+
+Copyright (c) 1982, 2009, Oracle and/or its affiliates.  All rights reserved.
+
+Error at line 1419, column 18 in file Model/DB.pc
+  1419  EXEC SQL DECLARE cust_cursor CURSOR FOR SELECT  a.customerid,nvl(b.acco
+        untno,0),nvl(b.accountbal,0),b.accounttype from h95_group6_customer a,h
+        95_group6_account b where a.customerid = :l_customerid and a.customerid
+        =b.customerid and accountstatus!='inactive';
+  1419  .................1
+  1419  PCC-W-02332, attempted to redefine SQL identifier

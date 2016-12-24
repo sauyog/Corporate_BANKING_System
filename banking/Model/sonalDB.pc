@@ -1,0 +1,202 @@
+#include "DB.h"
+#include "../GlobalDefs/GlobalDefs.h"
+#include<sstream>
+#include<iostream>
+#include "../AppClasses/Account/Account.h"
+
+using namespace std;
+//#include "../ExceptionClasses/SqlError/SqlError.h"
+exec sql include sqlca.h;
+
+// Defining Static Variables
+
+string DB::m_dbUserName = "";
+string DB::m_dbPassword = "";  
+bool DB::m_DbConnected = false;
+
+EXEC SQL BEGIN DECLARE SECTION;
+
+   char h_UserName[20];
+   char h_Password[20];
+   char h_DynamicStmt[2048];
+
+EXEC SQL END DECLARE SECTION;
+
+void DB::initialize_DB_Connection(string p_UserName, string p_Password)
+{
+  m_dbUserName = p_UserName;
+  m_dbPassword = p_Password;
+}
+
+int DB::dbConnect()
+{
+//  try
+//  {
+    strcpy(h_UserName,m_dbUserName.c_str());
+    strcpy(h_Password,m_dbPassword.c_str());
+
+    EXEC SQL CONNECT :h_UserName IDENTIFIED BY :h_Password ;
+
+    if(sqlca.sqlcode < 0)
+	cout<<sqlca.sqlcode<<endl;
+  //    throw ( SqlError( sqlca.sqlcode, sqlca.sqlerrm.sqlerrmc, "DB Connect Error" ) );
+
+    m_DbConnected = true;
+
+    return SUCCESS;
+ /* } 
+  catch (SqlError sqlError) 
+  {
+    sqlError.displaySqlError();
+  }
+  return FAILED;*/
+}
+
+int DB::dbExecDML_Stmt(string p_strInsertStmt)
+{
+ // try
+ // {
+    strcpy(h_DynamicStmt, p_strInsertStmt.c_str());
+
+    EXEC SQL EXECUTE IMMEDIATE :h_DynamicStmt;
+
+    if(sqlca.sqlcode < 0)
+  //    throw ( SqlError( sqlca.sqlcode, sqlca.sqlerrm.sqlerrmc, "DB Execute DML Error" ) );
+{	cout<<"code"<<sqlca.sqlerrm.sqlerrmc<<endl;
+		return FAILED;
+}
+
+    EXEC SQL COMMIT;
+
+    return SUCCESS;
+ /* } 
+  catch (SqlError sqlError) 
+  {
+    sqlError.displaySqlError();
+  }*/
+ // return FAILED;
+} 
+void DB::dbCloseConnection()
+{
+  if(m_DbConnected)
+  {
+   EXEC SQL COMMIT WORK RELEASE;
+   m_DbConnected = false;
+  }
+}
+
+int DB::dbCheckLogin(Login p_loginObj,int &p_UserRole)
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+    char h_UserName[20];
+    char h_Password[15];
+    int h_UserRole;
+  EXEC SQL END DECLARE SECTION;
+ // try
+  //{
+    strcpy(h_UserName, p_loginObj.getUserName().c_str());
+    strcpy(h_Password, p_loginObj.getPassword().c_str());
+    EXEC SQL SELECT desgn INTO :h_UserRole FROM h95_grp6_login WHERE uname=:h_UserName AND pwd=:h_Password;
+
+    if(sqlca.sqlcode < 0)
+	cout<<sqlca.sqlcode<<endl;
+//	cout<<"invalid user name password"<<endl;
+//	return FAILED;}
+    if(sqlca.sqlcode != 0){
+        cout<<sqlca.sqlcode<<endl;
+        cout<<"invalid user name password"<<endl;
+        return FAILED;}
+    //  throw ( SqlError( sqlca.sqlcode, sqlca.sqlerrm.sqlerrmc, "Invalid UserName or Password" ) );
+    
+    p_UserRole = h_UserRole;
+
+    return SUCCESS;
+ // }
+}
+
+int DB :: openAccountInDb(Account& acc_obj)
+	{
+		EXEC SQL BEGIN DECLARE SECTION;
+		int h_customerId;
+		char h_accountType[11];
+		int h_accountBal;
+		EXEC SQL END DECLARE SECTION;
+		istringstream(acc_obj.getCustomerId()) >> h_customerId;
+		strcpy(h_accountType,acc_obj.getAccountType().c_str());
+		h_accountBal=acc_obj.getAccountBalance();
+	cout<<"custid="<<acc_obj.getCustomerId()<<endl;
+	cout<<h_customerId<<endl;
+	cout<<"bal="<<acc_obj.getAccountBalance()<<endl;
+    	 EXEC SQL INSERT INTO h95_group6_account values(:h_customerId,h95_group6_account_accountno.nextval,:h_accountType,:h_accountBal,null,null,null,null,null,null,null,null,sysdate,'active');
+	 if(sqlca.sqlcode < 0)
+	{
+        cout<<sqlca.sqlcode<<sqlca.sqlerrm.sqlerrmc<<endl;
+      cout<<"cannot add data"<<endl;
+      return FAILED;
+	}
+	EXEC SQL COMMIT;
+	return SUCCESS;
+
+	}
+
+
+/*
+
+void DB :: fetchAllCustomer(vector<Customer> &customer_list,vector<Account> &acc_list)
+{
+exec sql begin declare section;
+char h_customerid[16];
+char h_accCustomerid[21];
+char h_customername[31];
+char h_accountno[7];
+char h_accounttype[11];
+double h_accountbal;
+exec sql end declare section;
+
+EXEC SQL DECLARE cust_cursor CURSOR FOR SELECT a.customerid,a.customername,b.customerid,b.accountno,nvl(accountbal.b,0),b.accounttype from h95_group6_customer a,h95_group6_account b WHERE a.customerid=b.customerid;
+
+EXEC SQL OPEN cust_cursor;
+for(;;)
+{
+EXEC SQL FETCH cust_cursor INTO :h_customerid,:h_customername,:h_accCustomerid,:h_accountno,:h_accountbal,:h_accounttype;
+if(sqlca.sqlcode < 0)
+cout<<"code="<<sqlca.sqlcode<<endl;
+Customer cust_obj;
+cust_obj.setCustomerName((string)h_customername);
+cust_obj.setCustomerId((string)h_customerid);
+customer_list.push_back(cust_obj);
+Account acc_obj;
+acc_obj.setAccountNo((string)h_accountno);
+acc_obj.setCustomerId((string)h_accCustomerid);
+acc_obj.setAccountBalance(h_accountbal);
+acc_obj.setAccountType((string)h_accounttype);
+acc_list.push_back(acc_obj);
+}
+EXEC SQL CLOSE cust_cursor;
+}
+ 
+
+  catch(SqlError sqlError)
+  {
+    sqlError.displaySqlError();
+  }
+  return FAILED;
+}
+*/
+int DB::deleteAccountInDb(string p_AccountNo)
+{       EXEC SQL BEGIN DECLARE SECTION;
+        char h_accountNo[21];
+        EXEC SQL END DECLARE SECTION;
+        strcpy(h_accountNo,p_AccountNo.c_str());
+        exec sql update h95_group6_account set accountstatus= 'inactive' where accountno=:h_accountNo;
+        if(sqlca.sqlcode<0)
+        {
+                cout<<sqlca.sqlcode<<endl;
+                return FAILED;
+
+
+        }
+   EXEC SQL COMMIT;
+  
+        return SUCCESS;
+}
